@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package defpackage.teleprogram
 
 import android.Manifest
@@ -16,15 +18,10 @@ import android.text.TextUtils
 import android.view.View
 import android.view.WindowManager
 import androidx.sqlite.db.SimpleSQLiteQuery
-import defpackage.telegramsms.extensions.areGranted
-import defpackage.telegramsms.extensions.currentTimeMillis
-import defpackage.telegramsms.extensions.isMarshmallowPlus
-import defpackage.telegramsms.extensions.requestPermissions
 import kotlinx.android.synthetic.main.dialog_prompt.*
 import org.jetbrains.anko.activityUiThread
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.powerManager
-import org.jetbrains.anko.sdk19.listeners.onItemSelectedListener
 import org.jetbrains.anko.toast
 import org.kodein.di.KodeinAware
 import org.kodein.di.android.closestKodein
@@ -46,6 +43,11 @@ abstract class BaseFragment : Fragment(), KodeinAware {
             }
         }
     }
+}
+
+class MainFragment : BaseFragment() {
+
+
 }
 
 class MainActivity : Activity() {

@@ -15,7 +15,7 @@ import timber.log.Timber
 val apiModule = Kodein.Module("api") {
 
     bind<TeleClient>() with singleton {
-        TeleClient()
+        TeleClient(instance())
     }
 
     bind<OkHttpClient>() with singleton {
