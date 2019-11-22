@@ -1,4 +1,4 @@
-package defpackage.teleprogram
+package defpackage.teleprogram.data
 
 import android.content.Context
 import com.chibatching.kotpref.KotprefModel
