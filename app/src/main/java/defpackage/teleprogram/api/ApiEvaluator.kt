@@ -26,6 +26,8 @@ class ApiEvaluator(context: Context) : KodeinAware, Android {
 
     private val reference = WeakReference(context)
 
+    private val preferences: Preferences by instance()
+
     private val teleClient: TeleClient by instance()
 
     private val okHttpClient: OkHttpClient by instance()

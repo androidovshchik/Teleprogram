@@ -6,6 +6,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.Dialog
 import android.app.Fragment
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -16,8 +17,10 @@ import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
 import android.view.View
+import android.view.Window
 import android.view.WindowManager
 import androidx.sqlite.db.SimpleSQLiteQuery
+import defpackage.teleprogram.api.Preferences
 import kotlinx.android.synthetic.main.dialog_prompt.*
 import org.jetbrains.anko.activityUiThread
 import org.jetbrains.anko.doAsync
@@ -48,6 +51,21 @@ abstract class BaseFragment : Fragment(), KodeinAware {
 class MainFragment : BaseFragment() {
 
 
+}
+
+class WaitDialog(activity: Activity) : Dialog(activity) {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        requestWindowFeature(Window.FEATURE_NO_TITLE)
+        setContentView(R.layout.dialog_wait)
+        dialog_cancel.setOnClickListener {
+            dismiss()
+            makeCallback<WaitListener> {
+                cancelWork()
+            }
+        }
+    }
 }
 
 class MainActivity : Activity() {

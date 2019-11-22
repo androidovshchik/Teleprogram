@@ -9,10 +9,15 @@ import okhttp3.logging.HttpLoggingInterceptor
 import org.kodein.di.Kodein
 import org.kodein.di.generic.bind
 import org.kodein.di.generic.instance
+import org.kodein.di.generic.provider
 import org.kodein.di.generic.singleton
 import timber.log.Timber
 
 val apiModule = Kodein.Module("api") {
+
+    bind<Preferences>() with provider {
+        Preferences(instance())
+    }
 
     bind<TeleClient>() with singleton {
         TeleClient(instance())

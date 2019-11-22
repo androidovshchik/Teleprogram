@@ -10,10 +10,11 @@ class ApiWorker(context: Context, params: WorkerParameters) : CoroutineWorker(co
 
     override suspend fun doWork(): Result = coroutineScope {
         val retry = inputData.getBoolean(PARAM_RETRY, false)
+        val javascript = inputData.getString(PARAM_JAVASCRIPT)
         Duktape.create().use {
             it.set("Android", Android::class.java, ApiEvaluator(applicationContext))
             when {
-                it.evaluate("") == 0 -> Result.success()
+                it.evaluate(javascript) == 0 -> Result.success()
                 retry -> Result.retry()
                 else -> Result.failure()
             }
@@ -23,6 +24,8 @@ class ApiWorker(context: Context, params: WorkerParameters) : CoroutineWorker(co
     companion object {
 
         const val PARAM_RETRY = "retry"
+
+        const val PARAM_JAVASCRIPT = "javascript"
     }
 }
 

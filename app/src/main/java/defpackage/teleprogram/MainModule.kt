@@ -1,5 +1,6 @@
 package defpackage.teleprogram
 
+import com.squareup.duktape.Duktape
 import defpackage.teleprogram.api.CronManager
 import org.kodein.di.Kodein
 import org.kodein.di.generic.bind
@@ -10,5 +11,9 @@ val mainModule = Kodein.Module("main") {
 
     bind<CronManager>() with provider {
         CronManager(instance())
+    }
+
+    bind<Duktape>() with provider {
+        Duktape.create()
     }
 }

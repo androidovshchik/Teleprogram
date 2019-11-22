@@ -1,4 +1,4 @@
-package defpackage.teleprogram
+package defpackage.teleprogram.api
 
 import android.content.Context
 import com.chibatching.kotpref.KotprefModel
@@ -7,9 +7,11 @@ class Preferences(context: Context) : KotprefModel(context) {
 
     override val kotprefName: String = "${context.packageName}_preferences"
 
-    var runApp by booleanPref(false, "run_app")
+    val appId by stringPref((1000..9999).random().toString(), "app_id")
 
-    var telegramPhone by nullableStringPref(null, "telegram_phone")
+    var telephone by nullableStringPref(null, "telephone")
+
+    var runApp by booleanPref(false, "run_app")
 
     var lastLaunch by longPref(0L, "last_launch")
 }
