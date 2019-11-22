@@ -14,7 +14,6 @@ import org.drinkless.td.libcore.telegram.TdApi
 import org.jetbrains.anko.*
 import timber.log.Timber
 import java.net.URL
-import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -290,17 +289,6 @@ class MainService : Service() {
     companion object {
 
         const val MAX_DIALOGS = 1000
-
-        val formatter: SimpleDateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.US)
-
-        val phoneRegex = "[+\\-() ]".toRegex()
-
-        val proxyRegex =
-            "^(?:(\\w+)(?::(\\w+))?@)?((?:\\d{1,3})(?:\\.\\d{1,3}){3})(?::(\\d{1,5}))?$".toRegex()
-
-        private val newLineRegex = "(\r\n|\r|\n)".toRegex()
-
-        private val simRegex = ".*(slot|sim).*".toRegex(RegexOption.IGNORE_CASE)
 
         /**
          * @return true if service is running

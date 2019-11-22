@@ -21,7 +21,8 @@
     <EditText
         android:id="@+id/et_list"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:layout_marginTop="6dp"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
@@ -32,7 +33,7 @@
         android:lines="5"
         android:maxLines="5"
         android:textSize="16sp"
-        android:hint="https://...\nhttps://...\nhttps://...\nhttps://...\nhttps://..." />
+        android:hint="// one line comment\nhttps://gist.githubusercontent.com/...\n/*\nMultiline comment\n*/" />
 
     <Button
         android:id="@+id/btn_api"
@@ -41,6 +42,7 @@
         android:layout_marginTop="10dp"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
         android:text="API" />
 
 </LinearLayout>

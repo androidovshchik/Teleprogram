@@ -2,12 +2,10 @@ package defpackage.teleprogram
 
 import android.app.Application
 import android.content.Context
-import defpackage.teleprogram.api.CronManager
 import defpackage.teleprogram.api.apiModule
 import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
 import org.kodein.di.generic.bind
-import org.kodein.di.generic.instance
 import org.kodein.di.generic.provider
 import timber.log.Timber
 
@@ -20,9 +18,7 @@ class MainApp : Application(), KodeinAware {
             applicationContext
         }
 
-        bind<CronManager>() with provider {
-            CronManager(instance())
-        }
+        import(mainModule)
 
         import(apiModule)
     }

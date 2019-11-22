@@ -2,11 +2,11 @@ package defpackage.teleprogram.api
 
 import android.content.Context
 import android.os.Build
+import androidx.core.os.ConfigurationCompat
 import defpackage.teleprogram.BuildConfig
 import defpackage.teleprogram.model.TeleMessage
 import org.drinkless.td.libcore.telegram.Client
 import org.drinkless.td.libcore.telegram.TdApi
-import java.util.*
 import java.util.concurrent.LinkedBlockingQueue
 
 private typealias OK = TdApi.Ok
@@ -32,7 +32,8 @@ class TeleClient(context: Context) {
             applicationVersion = BuildConfig.VERSION_NAME
             deviceModel = Build.MODEL
             systemVersion = Build.VERSION.RELEASE
-            systemLanguageCode = Locale.getDefault().language
+            systemLanguageCode =
+                ConfigurationCompat.getLocales(context.resources.configuration).get(0).language
         }
         sendSync<OK>(TdApi.SetLogVerbosityLevel(2))
         sendAsync<OK>(TdApi.SetTdlibParameters(tdLibParams)) { _ ->
