@@ -34,6 +34,12 @@ android {
     }
 }
 
+repositories {
+    maven {
+        url 'https://jitpack.io'
+    }
+}
+
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
@@ -50,7 +56,9 @@ dependencies {
     implementation 'com.couchbase.lite:couchbase-lite-android:2.5.0'
     implementation project(":libtd")
     implementation 'com.chibatching.kotpref:kotpref:2.9.1'
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
     implementation 'com.jakewharton.timber:timber:4.7.1'
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.0-beta-3'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'

@@ -11,6 +11,10 @@ import java.util.concurrent.LinkedBlockingQueue
 
 private typealias OK = TdApi.Ok
 
+private typealias OBJ = TdApi.Object
+
+private typealias FUN = TdApi.Function
+
 class TeleClient(context: Context) {
 
     val client: Client = Client.create({
@@ -45,15 +49,15 @@ class TeleClient(context: Context) {
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T> sendSync(query: TdApi.Function): T? {
+    fun <T : OBJ> sendSync(query: FUN): T? {
         return Client.execute(query) as? T
     }
 
-    fun sendAsync(query: TdApi.Function) {
+    fun sendAsync(query: FUN) {
         client.send(query, null)
     }
 
-    inline fun <reified T> sendAsync(query: TdApi.Function, crossinline block: (T?) -> Unit) {
+    inline fun <reified T : OBJ> sendAsync(query: FUN, crossinline block: (T?) -> Unit) {
         client.send(query) {
             block(it as? T)
         }

@@ -1,8 +1,12 @@
 package defpackage.teleprogram
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import defpackage.teleprogram.api.apiModule
+import defpackage.teleprogram.extensions.isOreoPlus
+import org.jetbrains.anko.notificationManager
 import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
 import org.kodein.di.generic.bind
@@ -27,6 +31,11 @@ class MainApp : Application(), KodeinAware {
         super.onCreate()
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
+        }
+        if (isOreoPlus()) {
+            notificationManager.createNotificationChannel(
+                NotificationChannel("low", "Low", NotificationManager.IMPORTANCE_LOW)
+            )
         }
     }
 }

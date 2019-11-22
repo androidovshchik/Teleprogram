@@ -15,13 +15,10 @@ import android.content.IntentFilter
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
-import android.text.TextUtils
-import android.view.View
 import android.view.Window
 import android.view.WindowManager
 import androidx.sqlite.db.SimpleSQLiteQuery
 import defpackage.teleprogram.api.Preferences
-import kotlinx.android.synthetic.main.dialog_prompt.*
 import org.jetbrains.anko.activityUiThread
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.powerManager
@@ -31,21 +28,13 @@ import org.kodein.di.android.closestKodein
 import timber.log.Timber
 import java.lang.ref.WeakReference
 
-@Suppress("MemberVisibilityCanBePrivate")
 abstract class BaseFragment : Fragment(), KodeinAware {
 
     override val kodein by closestKodein()
 
+    @Suppress("unused")
     protected val args: Bundle
         get() = arguments ?: Bundle()
-
-    inline fun <reified T> makeCallback(action: T.() -> Unit) {
-        activity?.let {
-            if (it is T && !it.isFinishing) {
-                action(it)
-            }
-        }
-    }
 }
 
 class MainFragment : BaseFragment() {
@@ -53,18 +42,12 @@ class MainFragment : BaseFragment() {
 
 }
 
-class WaitDialog(activity: Activity) : Dialog(activity) {
+class PromptDialog(activity: Activity) : Dialog(activity) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(R.layout.dialog_wait)
-        dialog_cancel.setOnClickListener {
-            dismiss()
-            makeCallback<WaitListener> {
-                cancelWork()
-            }
-        }
     }
 }
 
@@ -92,30 +75,6 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
         setContentView(R.layout.activity_main)
-        preferences = Preferences(applicationContext)
-        promptDialog = AlertDialog.Builder(this)
-            .setTitle("Код от телеграм")
-            .setView(View.inflate(applicationContext, R.layout.dialog_prompt, null))
-            .setPositiveButton(getString(android.R.string.ok), null)
-            .setCancelable(false)
-            .create()
-        promptDialog.setOnShowListener {
-            val positiveButton = promptDialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            positiveButton.setOnClickListener {
-                it.isEnabled = false
-                val input = promptDialog.code.text.toString()
-                if (!TextUtils.isEmpty(input)) {
-                    MainService.start(applicationContext, "code" to input)
-                    promptDialog.apply {
-                        code.setText("")
-                        it.isEnabled = true
-                        dismiss()
-                    }
-                } else {
-                    it.isEnabled = true
-                }
-            }
-        }
         preferences.apply {
             phone?.let {
                 phone_number.setText("+$it")

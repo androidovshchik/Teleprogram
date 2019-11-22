@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.provider.Settings
@@ -13,17 +12,18 @@ import defpackage.teleprogram.api.Preferences
 import org.drinkless.td.libcore.telegram.Client
 import org.drinkless.td.libcore.telegram.TdApi
 import org.jetbrains.anko.*
+import org.kodein.di.KodeinAware
+import org.kodein.di.android.closestKodein
 import timber.log.Timber
-import java.net.URL
 import java.util.*
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 @SuppressLint("InlinedApi")
-class MainService : Service() {
+class MainService : Service(), KodeinAware {
 
-    private lateinit var preferences: Preferences
+    override val kodein by closestKodein()
 
     private var wakeLock: PowerManager.WakeLock? = null
 
@@ -44,9 +44,9 @@ class MainService : Service() {
     override fun onCreate() {
         super.onCreate()
         startForeground(
-            100, NotificationCompat.Builder(applicationContext, "low")
-                .setSmallIcon(R.drawable.ic_send_white_24dp)
-                .setContentTitle("Фоновая работа с Telegram")
+            Int.MAX_VALUE, NotificationCompat.Builder(applicationContext, "low")
+                .setSmallIcon(R.drawable.ic_tv)
+                .setContentTitle("Teleprogram watch")
                 .setContentText("(-, - )…zzzZZZ")
                 .setOngoing(true)
                 .setSound(null)
@@ -131,137 +131,6 @@ class MainService : Service() {
             }
         }
         return START_STICKY
-    }
-
-    private fun initClient() {
-        client = Client.create({
-            when (it.constructor) {
-                TdApi.UpdateNewMessage.CONSTRUCTOR -> {
-                    onNextMessage((it as TdApi.UpdateNewMessage).message)
-                }
-            }
-        }, null, null)
-        val tdLibParams = TdApi.TdlibParameters().apply {
-            apiId = 913999
-            apiHash = "ce68cff091f15a9c559c783c40a432d1"
-            databaseDirectory = cacheDir.absolutePath
-            filesDirectory = filesDir.absolutePath
-            applicationVersion = BuildConfig.VERSION_NAME
-            deviceModel = Build.MODEL
-            systemVersion = Build.VERSION.RELEASE
-            systemLanguageCode = Locale.getDefault().language
-        }
-        client?.send(TdApi.SetTdlibParameters(tdLibParams)) { _ ->
-            client?.send(TdApi.SetDatabaseEncryptionKey("telegram_sms".toByteArray())) { _ ->
-                Client.execute(TdApi.SetLogVerbosityLevel(2))
-                client?.send(TdApi.GetProxies()) {
-                    val url = try {
-                        URL("http://${preferences.proxyUrl}")
-                    } catch (e: Throwable) {
-                        Timber.e(e)
-                        null
-                    }
-                    if (it is TdApi.Proxies && url != null) {
-                        if (preferences.proxyType > 0) {
-                            val (user, password) = url.userInfo?.split(":") ?: listOf("", "")
-                            val type = when (preferences.proxyType) {
-                                1 -> TdApi.ProxyTypeSocks5(user, password)
-                                2 -> TdApi.ProxyTypeHttp(user, password, false)
-                                else -> TdApi.ProxyTypeHttp(user, password, true)
-                            }
-                            if (it.proxies.isEmpty()) {
-                                client?.send(TdApi.AddProxy(url.host, url.port, true, type), null)
-                            } else {
-                                client?.send(
-                                    TdApi.EditProxy(
-                                        it.proxies[0].id,
-                                        url.host,
-                                        url.port,
-                                        true,
-                                        type
-                                    ), null
-                                )
-                            }
-                        } else if (it.proxies.isNotEmpty()) {
-                            client?.send(TdApi.RemoveProxy(it.proxies[0].id), null)
-                        }
-                    }
-                }
-                client?.send(TdApi.GetAuthorizationState()) { obj ->
-                    when (obj.constructor) {
-                        TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR -> {
-                            client?.send(
-                                TdApi.SetAuthenticationPhoneNumber(
-                                    preferences.phone,
-                                    TdApi.PhoneNumberAuthenticationSettings(false, false, false)
-                                ), null
-                            )
-                            sendBroadcast(Intent("TGM_PROMPT").apply {
-                                putExtra("prompted", false)
-                            })
-                        }
-                        TdApi.AuthorizationStateWaitCode.CONSTRUCTOR -> {
-                            client?.send(
-                                TdApi.SendPhoneNumberVerificationCode(
-                                    preferences.phone,
-                                    TdApi.PhoneNumberAuthenticationSettings(false, false, false)
-                                ), null
-                            )
-                            sendBroadcast(Intent("TGM_PROMPT").apply {
-                                putExtra("prompted", false)
-                            })
-                        }
-                        // not all cases matches correct here e.g. TdApi.AuthorizationStateWaitPassword
-                        else -> {
-                            Timber.i(obj.toString())
-                            client?.send(TdApi.GetChats(Long.MAX_VALUE, 0, MAX_DIALOGS)) {
-                                if (it is TdApi.Chats) {
-                                    isAuthorized.compareAndSet(false, true)
-                                    bgToast("Вы успешно авторизованы в телеграм")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private fun onNextMessage(message: TdApi.Message) {
-        if (message.content !is TdApi.MessageText) {
-            return
-        }
-        val text = (message.content as TdApi.MessageText).text.text
-            .replace(newLineRegex, " ")
-        SourceType.fromText(text)?.let { arg1 ->
-            Timber.i("SourceType.fromText: $arg1")
-            tryCast<Argument<ContentType>>(arg1.param) { arg2 ->
-                tryCast<Argument<MoneyType>>(arg2.param) { arg3 ->
-                    db.moneyDao().insert(TMoney().apply {
-                        source = arg1.enum.id
-                        content = arg2.enum.id
-                        money = arg3.enum.id
-                        amount = arg3.param as Float
-                        chat = message.chatId
-                        timestamp = message.date * 1000L
-                        offset = offsetTimeMillis()
-                        datetime = formatter.format(message.date * 1000L)
-                    })
-                    client?.send(TdApi.GetChat(message.chatId)) {
-                        if (it is TdApi.Chat) {
-                            db.chatDao().upsert(TDialog().apply {
-                                chat = it.id
-                                title = it.title
-                            })
-                        }
-                    }
-                }
-            }
-            return
-        }
-        if (message.date < startSeconds) {
-            return
-        }
     }
 
     @SuppressLint("WakelockTimeout")

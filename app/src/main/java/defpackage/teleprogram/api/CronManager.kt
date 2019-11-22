@@ -31,7 +31,9 @@ class ApiWorker(context: Context, params: WorkerParameters) : CoroutineWorker(co
 
 class CronManager(context: Context) {
 
-    fun launch(context: Context, retry: Boolean = false) {
+    val workManager = WorkManager.getInstance(context)
+
+    fun launchUnique(retry: Boolean = false) {
         val request = OneTimeWorkRequestBuilder<ApiWorker>()
             .setInputData(
                 Data.Builder()
@@ -59,8 +61,6 @@ class CronManager(context: Context) {
     }
 
     fun cancel(context: Context) {
-        WorkManager.getInstance(context).apply {
-            cancelUniqueWork(NAMaaE)
-        }
+        workManager.cancelAllWork()
     }
 }
