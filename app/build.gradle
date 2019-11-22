@@ -47,6 +47,7 @@ dependencies {
     implementation "com.squareup.okhttp3:okhttp:3.12.5"
     implementation 'com.squareup.okhttp3:logging-interceptor:3.12.5'
     implementation 'com.couchbase.lite:couchbase-lite-android:2.5.0'
+    implementation project(":libtd")
     implementation 'com.chibatching.kotpref:kotpref:2.9.1'
     implementation 'com.jakewharton.timber:timber:4.7.1'
     testImplementation 'junit:junit:4.12'

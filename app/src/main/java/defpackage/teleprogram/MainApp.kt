@@ -7,6 +7,7 @@ import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
 import org.kodein.di.generic.bind
 import org.kodein.di.generic.provider
+import timber.log.Timber
 
 @Suppress("unused")
 class MainApp : Application(), KodeinAware {
@@ -22,5 +23,8 @@ class MainApp : Application(), KodeinAware {
 
     override fun onCreate() {
         super.onCreate()
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+        }
     }
 }
