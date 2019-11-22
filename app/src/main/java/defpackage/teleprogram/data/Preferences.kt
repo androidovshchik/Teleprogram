@@ -9,7 +9,7 @@ class Preferences(context: Context) : KotprefModel(context) {
 
     var runApp by booleanPref(false, "run_app")
 
-    var phone by nullableStringPref(null, "phone")
+    var telegramPhone by nullableStringPref(null, "telegram_phone")
 
-    var lastTime by longPref(0L, "last_time")
+    var lastLaunch by longPref(0L, "last_launch")
 }

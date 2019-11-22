@@ -43,8 +43,9 @@ dependencies {
     implementation 'androidx.work:work-runtime-ktx:2.2.0'
     implementation "org.kodein.di:kodein-di-generic-jvm:6.3.3"
     implementation "org.kodein.di:kodein-di-framework-android-core:6.3.3"
+    implementation 'com.squareup.duktape:duktape-android:1.3.0'
     implementation "com.squareup.okhttp3:okhttp:3.12.5"
-    implementation 'com.squareup.okhttp3:logging-interceptor:3.12.5'
+    implementation 'com.couchbase.lite:couchbase-lite-android:2.5.0'
     implementation 'com.chibatching.kotpref:kotpref:2.9.1'
     implementation 'com.jakewharton.timber:timber:4.7.1'
     testImplementation 'junit:junit:4.12'
