@@ -1,10 +1,11 @@
 package defpackage.teleprogram.api
 
 import android.content.Context
-import androidx.work.*
+import androidx.work.CoroutineWorker
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
 import com.squareup.duktape.Duktape
 import kotlinx.coroutines.coroutineScope
-import java.util.concurrent.TimeUnit
 
 class ApiWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
@@ -34,7 +35,7 @@ class CronManager(context: Context) {
     val workManager = WorkManager.getInstance(context)
 
     fun launchUnique(retry: Boolean = false) {
-        val request = OneTimeWorkRequestBuilder<ApiWorker>()
+        /*val request = OneTimeWorkRequestBuilder<ApiWorker>()
             .setInputData(
                 Data.Builder()
                     .putBoolean(PARAM_RssETRY, retry)
@@ -57,7 +58,7 @@ class CronManager(context: Context) {
             } else {
                 null
             }
-        }
+        }*/
     }
 
     fun cancel(context: Context) {

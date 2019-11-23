@@ -14,18 +14,17 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.view.*
+import defpackage.teleprogram.api.Preferences
 import defpackage.teleprogram.extensions.isMarshmallowPlus
 import defpackage.teleprogram.extensions.makeCallback
 import kotlinx.android.synthetic.main.dialog_prompt.*
 import kotlinx.android.synthetic.main.fragment_api.*
 import kotlinx.android.synthetic.main.fragment_main.*
 import org.jetbrains.anko.powerManager
-import org.jetbrains.anko.toast
 import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
 import org.kodein.di.android.closestKodein
 import org.kodein.di.generic.instance
-import timber.log.Timber
 
 abstract class BaseFragment : Fragment(), KodeinAware {
 
@@ -52,7 +51,7 @@ class MainFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         btn_api.setOnClickListener {
             activity.makeCallback<MainActivity> {
-                setFragment(ApiFragment())
+                addFragment(ApiFragment())
             }
         }
     }
@@ -85,17 +84,17 @@ class MainActivity : Activity(), KodeinAware {
         import(mainModule)
     }
 
+    private val preferences: Preferences by instance()
+
     private val promptDialog: PromptDialog by instance()
 
     private val receiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context, intent: Intent) {
-            promptDialog.apply {
-                if (intent.getBooleanExtra("prompted", false)) {
-                    dismiss()
-                } else {
-                    show()
-                }
+            if (intent.getBooleanExtra("prompted", false)) {
+                promptDialog.dismiss()
+            } else {
+                promptDialog.show()
             }
         }
     }
@@ -105,7 +104,7 @@ class MainActivity : Activity(), KodeinAware {
         super.onCreate(savedInstanceState)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
         setContentView(R.layout.activity_main)
-        setFragment(MainFragment())
+        addFragment(MainFragment())
         // NOTICE this violates Google Play policy
         if (isMarshmallowPlus()) {
             if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
@@ -122,32 +121,17 @@ class MainActivity : Activity(), KodeinAware {
 
     override fun onStart() {
         super.onStart()
-        toggleService(preferences.runService)
+        MainService.toggleService(applicationContext, preferences.runApp)
     }
 
-    private fun toggleService(run: Boolean): Boolean {
-        return if (run) {
-            try {
-                MainService.start(applicationContext)
-            } catch (e: Throwable) {
-                Timber.e(e)
-                toast(e.toString())
-                false
-            }
-        } else {
-            MainService.stop(applicationContext)
+    fun addFragment(fragment: BaseFragment) {
+        fragmentManager.apply {
+            beginTransaction()
+                .replace(R.id.frg_main, fragment, backStackEntryCount.toString())
+                .addToBackStack(null)
+                .commitAllowingStateLoss()
+            executePendingTransactions()
         }
-    }
-
-    fun setFragment(fragment: BaseFragment) {
-        if (getCurrentFragment() is MenuFragment) {
-            while (popFragment(true));
-        }
-        fragmentManager.beginTransaction()
-            .replace(R.id.frg_main, fragment, supportFragmentManager.backStackEntryCount.toString())
-            .addToBackStack(null)
-            .commitAllowingStateLoss()
-        fragmentManager.executePendingTransactions()
     }
 
     override fun onDestroy() {
