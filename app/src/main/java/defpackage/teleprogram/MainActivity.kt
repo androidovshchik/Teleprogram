@@ -15,10 +15,10 @@ import android.content.IntentFilter
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
-import android.view.Window
-import android.view.WindowManager
+import android.view.*
 import androidx.sqlite.db.SimpleSQLiteQuery
 import defpackage.teleprogram.api.Preferences
+import kotlinx.android.synthetic.main.dialog_prompt.*
 import org.jetbrains.anko.activityUiThread
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.powerManager
@@ -31,27 +31,49 @@ import java.lang.ref.WeakReference
 abstract class BaseFragment : Fragment(), KodeinAware {
 
     override val kodein by closestKodein()
+}
 
-    @Suppress("unused")
-    protected val args: Bundle
-        get() = arguments ?: Bundle()
+class ApiFragment : BaseFragment() {
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        return inflater.inflate(R.layout.fragment_api, container, false)
+    }
 }
 
 class MainFragment : BaseFragment() {
 
-
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        return inflater.inflate(R.layout.fragment_main, container, false)
+    }
 }
 
 class PromptDialog(activity: Activity) : Dialog(activity) {
 
+    init {
+        setCancelable(false)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestWindowFeature(Window.FEATURE_NO_TITLE)
-        setContentView(R.layout.dialog_wait)
+        setContentView(R.layout.dialog_prompt)
+        btn_ok.setOnClickListener {
+
+        }
     }
 }
 
-class MainActivity : Activity() {
+class MainActivity : Activity(), KodeinAware {
+
+    override val kodein by closestKodein()
 
     private lateinit var preferences: Preferences
 
