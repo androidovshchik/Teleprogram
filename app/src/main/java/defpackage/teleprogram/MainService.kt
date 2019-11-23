@@ -7,12 +7,14 @@ import android.content.Intent
 import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
+import defpackage.teleprogram.api.TeleClient
 import defpackage.teleprogram.extensions.isRunning
 import defpackage.teleprogram.extensions.startForegroundService
 import org.jetbrains.anko.*
 import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
 import org.kodein.di.android.closestKodein
+import org.kodein.di.generic.instance
 import timber.log.Timber
 
 @SuppressLint("InlinedApi")
@@ -26,6 +28,8 @@ class MainService : Service(), KodeinAware {
 
         import(mainModule)
     }
+
+    private val teleClient: TeleClient by instance()
 
     private var wakeLock: PowerManager.WakeLock? = null
 

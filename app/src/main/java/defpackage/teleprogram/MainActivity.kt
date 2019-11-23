@@ -14,6 +14,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.text.TextUtils
 import android.view.*
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -91,7 +92,10 @@ class MainFragment : BaseFragment() {
         }
         preferences.apply {
             telephone?.let {
-                et_phone.setText("+$it")
+                et_phone.apply {
+                    setText("+$it")
+                    isEnabled = false
+                }
             }
             et_list.setText(urlList)
         }
@@ -154,6 +158,11 @@ class MainActivity : Activity(), KodeinAware {
         }
     }
 
+    val currentFragment: BaseFragment?
+        get() = fragmentManager.run {
+            findFragmentByTag((backStackEntryCount - 1).toString()) as BaseFragment?
+        }
+
     @SuppressLint("BatteryLife")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -162,16 +171,21 @@ class MainActivity : Activity(), KodeinAware {
         ib_back.setOnClickListener {
             onBackPressed()
         }
-        tv_id.text = preferences.appId
+        preferences.apply {
+            tv_id.text = appId
+            swt_run.isChecked = runApp
+        }
         swt_run.setOnCheckedChangeListener { buttonView, isChecked ->
             if (isChecked) {
                 preferences.bulk {
-                    telephone?.let {
-                        val phone = phone.trim()
+                    if (TextUtils.isEmpty(telephone)) {
+                        val phone = phone.replace("[^\\d]".toRegex(), "")
                         if (phone.isEmpty()) {
                             toast("Заполните телефон")
+                            buttonView.isChecked = false
                             return@setOnCheckedChangeListener
                         }
+                        (currentFragment as? MainFragment)?.et_phone?.isEnabled = false
                         telephone = phone
                     }
                     urlList = urls.trim()

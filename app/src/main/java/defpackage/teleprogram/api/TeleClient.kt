@@ -43,7 +43,9 @@ class TeleClient(context: Context) {
         sendAsync<OK>(TdApi.SetTdlibParameters(tdLibParams)) { _ ->
             val key = "teleprogram".toByteArray()
             sendAsync<OK>(TdApi.SetDatabaseEncryptionKey(key)) { _ ->
+                sendAsync<TdApi.AuthorizationState>(TdApi.GetAuthorizationState()) {
 
+                }
             }
         }
     }
