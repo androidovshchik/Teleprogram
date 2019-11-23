@@ -28,6 +28,7 @@ class FileManager(context: Context) {
         try {
             FileOutputStream(file).use {
                 it.write(text.toByteArray())
+                it.flush()
             }
         } catch (e: Throwable) {
             Timber.e(e)
@@ -52,11 +53,9 @@ class FileManager(context: Context) {
                 listFiles()?.forEach {
                     if (it.isDirectory) {
                         deleteFolder(it)
-                    } else {
-                        it.delete()
                     }
+                    it.delete()
                 }
-                delete()
             }
         }
     }

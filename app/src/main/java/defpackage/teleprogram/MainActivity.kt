@@ -21,6 +21,7 @@ import android.webkit.WebViewClient
 import androidx.core.widget.addTextChangedListener
 import com.chibatching.kotpref.bulk
 import defpackage.teleprogram.api.Preferences
+import defpackage.teleprogram.extensions.currentTimeMillis
 import defpackage.teleprogram.extensions.isMarshmallowPlus
 import defpackage.teleprogram.extensions.lock
 import defpackage.teleprogram.extensions.makeCallback
@@ -94,7 +95,7 @@ class MainFragment : BaseFragment() {
             telephone?.let {
                 updatePhone(it)
             }
-            et_list.setText(urlList)
+            et_list.setText(listUrl)
         }
         btn_api.setOnClickListener {
             activity.makeCallback<MainActivity> {
@@ -193,7 +194,8 @@ class MainActivity : Activity(), KodeinAware {
                         (currentFragment as? MainFragment)?.updatePhone("+$phone")
                         telephone = phone
                     }
-                    urlList = urls.trim()
+                    listUrl = urls.trim()
+                    lastLaunch = currentTimeMillis()
                 }
             }
             view.lock {

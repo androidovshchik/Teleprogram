@@ -3,6 +3,12 @@
 package defpackage.teleprogram.extensions
 
 import android.os.Build
+import java.util.*
+
+fun offsetTimeMillis() = TimeZone.getDefault().getOffset(System.currentTimeMillis())
+
+fun currentTimeMillis(utc: Boolean = true) =
+    System.currentTimeMillis() - if (utc) offsetTimeMillis() else 0
 
 fun isKitkat() = Build.VERSION.SDK_INT == Build.VERSION_CODES.KITKAT
 

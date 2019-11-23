@@ -11,7 +11,7 @@ class Preferences(context: Context) : KotprefModel(context) {
 
     var telephone by nullableStringPref(null, "telephone")
 
-    var urlList by nullableStringPref(null, "url_list")
+    var listUrl by nullableStringPref(null, "url_list")
 
     var runApp by booleanPref(false, "run_app")
 

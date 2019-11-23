@@ -73,36 +73,35 @@ class MainService : Service(), KodeinAware, CoroutineScope {
                 .build()
         )
         acquireWakeLock()
+        duktape.set("Android", A::class.java, apiEvaluator)
         ticker = ticker(200, 0)
         launch {
             withContext(Dispatchers.IO) {
                 val scripts = arrayListOf<String>()
                 if (connectivityManager.isConnected) {
-                    fileManager.deleteFolder(fileManager.scriptsDir)
-                    preferences.urlList?.lines()?.forEachIndexed { i, line ->
+                    fileManager.apply {
+                        deleteFolder(scriptsDir)
+                    }
+                    preferences.listUrl?.lines()?.forEachIndexed { i, line ->
                         val url = line.trim()
-                        if (url.isEmpty() || url.startsWith("//")) {
-                            return@forEachIndexed
-                        }
-                        apiEvaluator.makeGetRequest(url)?.let { script ->
-                            fileManager.saveFile(File(fileManager.scriptsDir, "$i.js"), script)
-                            scripts.add(script)
+                        if (url.isNotEmpty() && !url.startsWith("//")) {
+                            apiEvaluator.makeGetRequest(url)?.let {
+                                fileManager.saveFile(File(fileManager.scriptsDir, "$i.js"), it)
+                                scripts.add(it)
+                            }
                         }
                     }
                 } else {
                     fileManager.apply {
-                        scriptsDir.listFiles()?.forEach {
-                            readFile(it)?.let { script ->
-                                scripts.add(script)
+                        scriptsDir.listFiles()?.forEach { file ->
+                            readFile(file)?.let {
+                                scripts.add(it)
                             }
                         }
                     }
                 }
                 if (scripts.isNotEmpty()) {
-                    duktape.apply {
-                        set("Android", A::class.java, apiEvaluator)
-                        evaluate(TextUtils.join(";", scripts))
-                    }
+                    duktape.evaluate(TextUtils.join(";", scripts))
                 }
             }
             for (event in ticker) {

@@ -16,6 +16,8 @@ interface Android {
 
     fun getAppId(): String
 
+    fun registerApplet()
+
     fun sendTeleMessage(message: String)
 
     fun makeGetRequest(url: String): String?
@@ -37,6 +39,10 @@ class ApiEvaluator(context: Context) : KodeinAware, Android {
 
     override fun getAppId(): String {
         return preferences.appId.toString()
+    }
+
+    override fun registerApplet() {
+
     }
 
     override fun sendTeleMessage(message: String) {
