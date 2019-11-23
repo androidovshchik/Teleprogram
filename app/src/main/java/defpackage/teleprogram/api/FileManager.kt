@@ -20,6 +20,10 @@ class FileManager(context: Context) {
         mkdirs()
     }
 
+    val appletsDir = File(externalDir, "applets").apply {
+        mkdirs()
+    }
+
     fun saveFile(file: File, text: String) {
         try {
             FileOutputStream(file).use {
@@ -28,6 +32,32 @@ class FileManager(context: Context) {
         } catch (e: Throwable) {
             Timber.e(e)
             file.delete()
+        }
+    }
+
+    fun readFile(file: File): String? {
+        return try {
+            return file.bufferedReader().use {
+                it.readText()
+            }
+        } catch (e: Throwable) {
+            Timber.e(e)
+            null
+        }
+    }
+
+    fun deleteFolder(file: File) {
+        file.apply {
+            if (exists()) {
+                listFiles()?.forEach {
+                    if (it.isDirectory) {
+                        deleteFolder(it)
+                    } else {
+                        it.delete()
+                    }
+                }
+                delete()
+            }
         }
     }
 }

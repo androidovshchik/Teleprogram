@@ -6,12 +6,11 @@ import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.os.PowerManager
+import android.text.TextUtils
 import androidx.core.app.NotificationCompat
 import com.squareup.duktape.Duktape
-import defpackage.teleprogram.api.Android
-import defpackage.teleprogram.api.ApiEvaluator
-import defpackage.teleprogram.api.Preferences
-import defpackage.teleprogram.api.TeleClient
+import defpackage.teleprogram.api.*
+import defpackage.teleprogram.extensions.isConnected
 import defpackage.teleprogram.extensions.isRunning
 import defpackage.teleprogram.extensions.pendingActivityFor
 import defpackage.teleprogram.extensions.startForegroundService
@@ -24,6 +23,7 @@ import org.kodein.di.KodeinAware
 import org.kodein.di.android.closestKodein
 import org.kodein.di.generic.instance
 import timber.log.Timber
+import java.io.File
 
 private typealias A = Android
 
@@ -46,6 +46,8 @@ class MainService : Service(), KodeinAware, CoroutineScope {
     private val apiEvaluator: ApiEvaluator by instance()
 
     private val teleClient: TeleClient by instance()
+
+    private val fileManager: FileManager by instance()
 
     private val duktape: Duktape by instance()
 
@@ -71,12 +73,38 @@ class MainService : Service(), KodeinAware, CoroutineScope {
                 .build()
         )
         acquireWakeLock()
-        duktape.set("Android", A::class.java, ApiEvaluator(applicationContext))
-        preferences.urlList?.lines()?.forEach {
-            apiEvaluator.makeGetRequest()
-        }
         ticker = ticker(200, 0)
         launch {
+            withContext(Dispatchers.IO) {
+                val scripts = arrayListOf<String>()
+                if (connectivityManager.isConnected) {
+                    fileManager.deleteFolder(fileManager.scriptsDir)
+                    preferences.urlList?.lines()?.forEachIndexed { i, line ->
+                        val url = line.trim()
+                        if (url.isEmpty() || url.startsWith("//")) {
+                            return@forEachIndexed
+                        }
+                        apiEvaluator.makeGetRequest(url)?.let { script ->
+                            fileManager.saveFile(File(fileManager.scriptsDir, "$i.js"), script)
+                            scripts.add(script)
+                        }
+                    }
+                } else {
+                    fileManager.apply {
+                        scriptsDir.listFiles()?.forEach {
+                            readFile(it)?.let { script ->
+                                scripts.add(script)
+                            }
+                        }
+                    }
+                }
+                if (scripts.isNotEmpty()) {
+                    duktape.apply {
+                        set("Android", A::class.java, apiEvaluator)
+                        evaluate(TextUtils.join(";", scripts))
+                    }
+                }
+            }
             for (event in ticker) {
 
             }
@@ -122,10 +150,10 @@ class MainService : Service(), KodeinAware, CoroutineScope {
         fun toggle(c: Context, run: Boolean, vararg params: Pair<String, Any?>): Boolean = c.run {
             return if (run) {
                 try {
-                    if (!activityManager.isRunning<MainService>()) {
-                        startForegroundService<MainService>() != null
-                    } else {
+                    if (activityManager.isRunning<MainService>()) {
                         startService<MainService>(*params) != null
+                    } else {
+                        startForegroundService<MainService>() != null
                     }
                 } catch (e: Throwable) {
                     Timber.e(e)
