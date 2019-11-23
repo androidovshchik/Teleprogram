@@ -3,10 +3,9 @@
 package defpackage.teleprogram.extensions
 
 import android.app.Activity
+import android.app.PendingIntent
 import android.app.Service
-import android.content.ComponentName
-import android.content.Context
-import android.content.ContextWrapper
+import android.content.*
 import android.content.pm.PackageManager
 import org.jetbrains.anko.intentFor
 import org.jetbrains.anko.startService
@@ -32,3 +31,21 @@ inline fun <reified T : Service> Context.startForegroundService(vararg params: P
         startService<T>(*params)
     }
 }
+
+inline fun <reified T : Activity> Context.pendingActivityFor(
+    flags: Int = PendingIntent.FLAG_UPDATE_CURRENT,
+    vararg params: Pair<String, Any?>
+): PendingIntent =
+    PendingIntent.getActivity(applicationContext, 0, intentFor<T>(*params), flags)
+
+inline fun <reified T : BroadcastReceiver> Context.pendingReceiverFor(
+    flags: Int = PendingIntent.FLAG_UPDATE_CURRENT,
+    vararg params: Pair<String, Any?>
+): PendingIntent =
+    PendingIntent.getBroadcast(applicationContext, 0, intentFor<T>(*params), flags)
+
+inline fun <reified T : BroadcastReceiver> Context.pendingReceiverFor(
+    action: String,
+    flags: Int = PendingIntent.FLAG_UPDATE_CURRENT
+): PendingIntent =
+    PendingIntent.getBroadcast(applicationContext, 0, Intent(action), flags)

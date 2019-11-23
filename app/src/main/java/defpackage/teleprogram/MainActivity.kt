@@ -79,7 +79,6 @@ class MainFragment : BaseFragment() {
         return inflater.inflate(R.layout.fragment_main, parent, false)
     }
 
-    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         et_phone.addTextChangedListener {
             activity.makeCallback<MainActivity> {
@@ -93,10 +92,7 @@ class MainFragment : BaseFragment() {
         }
         preferences.apply {
             telephone?.let {
-                et_phone.apply {
-                    setText("+$it")
-                    isEnabled = false
-                }
+                updatePhone(it)
             }
             et_list.setText(urlList)
         }
@@ -104,6 +100,14 @@ class MainFragment : BaseFragment() {
             activity.makeCallback<MainActivity> {
                 addFragment(ApiFragment())
             }
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    fun updatePhone(phone: String) {
+        et_phone.apply {
+            setText("+$phone")
+            isEnabled = false
         }
     }
 }
@@ -186,10 +190,7 @@ class MainActivity : Activity(), KodeinAware {
                             view.isChecked = false
                             return@setOnCheckedChangeListener
                         }
-                        (currentFragment as? MainFragment)?.et_phone?.apply {
-                            setText("+$phone")
-                            isEnabled = false
-                        }
+                        (currentFragment as? MainFragment)?.updatePhone("+$phone")
                         telephone = phone
                     }
                     urlList = urls.trim()

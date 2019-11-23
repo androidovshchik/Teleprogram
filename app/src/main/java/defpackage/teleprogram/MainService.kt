@@ -7,10 +7,16 @@ import android.content.Intent
 import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
+import com.squareup.duktape.Duktape
+import defpackage.teleprogram.api.Android
+import defpackage.teleprogram.api.ApiEvaluator
+import defpackage.teleprogram.api.Preferences
 import defpackage.teleprogram.api.TeleClient
 import defpackage.teleprogram.extensions.isRunning
+import defpackage.teleprogram.extensions.pendingActivityFor
 import defpackage.teleprogram.extensions.startForegroundService
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.ticker
 import org.jetbrains.anko.*
 import org.kodein.di.Kodein
@@ -18,6 +24,8 @@ import org.kodein.di.KodeinAware
 import org.kodein.di.android.closestKodein
 import org.kodein.di.generic.instance
 import timber.log.Timber
+
+private typealias A = Android
 
 @SuppressLint("InlinedApi")
 class MainService : Service(), KodeinAware, CoroutineScope {
@@ -33,7 +41,15 @@ class MainService : Service(), KodeinAware, CoroutineScope {
 
     private val serviceJob = SupervisorJob()
 
+    private val preferences: Preferences by instance()
+
+    private val apiEvaluator: ApiEvaluator by instance()
+
     private val teleClient: TeleClient by instance()
+
+    private val duktape: Duktape by instance()
+
+    private lateinit var ticker: ReceiveChannel<Unit>
 
     private var wakeLock: PowerManager.WakeLock? = null
 
@@ -49,21 +65,22 @@ class MainService : Service(), KodeinAware, CoroutineScope {
                 .setSmallIcon(R.drawable.ic_tv)
                 .setContentTitle("Teleprogram watching")
                 .setContentText("(ﾉ◕ヮ◕)ﾉ*:・ﾟ✧")
+                .setContentIntent(pendingActivityFor<MainActivity>())
                 .setOngoing(true)
                 .setSound(null)
                 .build()
         )
         acquireWakeLock()
-        "\\\\*(.|\\n)*?\\*/".toRegex()
-        val tickerChannel = ticker(15_000, 0)
+        duktape.set("Android", A::class.java, ApiEvaluator(applicationContext))
+        preferences.urlList?.lines()?.forEach {
+            apiEvaluator.makeGetRequest()
+        }
+        ticker = ticker(200, 0)
         launch {
-            for (event in tickerChannel) {
+            for (event in ticker) {
 
             }
         }
-
-// when you're done with the ticker and don't want more events
-        tickerChannel.cancel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -88,6 +105,9 @@ class MainService : Service(), KodeinAware, CoroutineScope {
     }
 
     override fun onDestroy() {
+        ticker.cancel()
+        serviceJob.cancelChildren()
+        duktape.close()
         releaseWakeLock()
         super.onDestroy()
     }
