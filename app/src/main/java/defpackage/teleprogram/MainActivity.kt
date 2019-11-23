@@ -17,6 +17,8 @@ import android.provider.Settings
 import android.view.*
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.core.widget.addTextChangedListener
+import com.chibatching.kotpref.bulk
 import defpackage.teleprogram.api.Preferences
 import defpackage.teleprogram.extensions.isMarshmallowPlus
 import defpackage.teleprogram.extensions.makeCallback
@@ -25,6 +27,7 @@ import kotlinx.android.synthetic.main.dialog_prompt.*
 import kotlinx.android.synthetic.main.fragment_api.*
 import kotlinx.android.synthetic.main.fragment_main.*
 import org.jetbrains.anko.powerManager
+import org.jetbrains.anko.toast
 import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
 import org.kodein.di.android.closestKodein
@@ -58,10 +61,9 @@ class ApiFragment : BaseFragment() {
         wv_api.apply {
             setBackgroundColor(Color.TRANSPARENT)
             settings.javaScriptEnabled = true
-            webViewClient = WebClient(context.assets.open("postscript.js")
-                .bufferedReader().use {
-                    it.readText().replace("(\r\n|\r|\n)".toRegex(), "")
-                })
+            webViewClient = WebClient(context.assets.open("postscript.js").bufferedReader().use {
+                it.readText().replace("(\r\n|\r|\n)".toRegex(), "")
+            })
             loadUrl("file:///android_asset/app/${activity?.packageName}.api/-android/index.html")
         }
     }
@@ -69,11 +71,30 @@ class ApiFragment : BaseFragment() {
 
 class MainFragment : BaseFragment() {
 
+    private val preferences: Preferences by instance()
+
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, bundle: Bundle?): View {
         return inflater.inflate(R.layout.fragment_main, parent, false)
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        et_phone.addTextChangedListener {
+            activity.makeCallback<MainActivity> {
+                phone = it.toString()
+            }
+        }
+        et_list.addTextChangedListener {
+            activity.makeCallback<MainActivity> {
+                urls = it.toString()
+            }
+        }
+        preferences.apply {
+            telephone?.let {
+                et_phone.setText("+$it")
+            }
+            et_list.setText(urlList)
+        }
         btn_api.setOnClickListener {
             activity.makeCallback<MainActivity> {
                 addFragment(ApiFragment())
@@ -93,10 +114,12 @@ class PromptDialog(activity: Activity) : Dialog(activity, R.style.AppDialog) {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(R.layout.dialog_prompt)
         btn_ok.setOnClickListener {
+            it.isEnabled = false
             val code = et_code.text.toString().trim()
             if (code.isNotEmpty()) {
                 MainService.toggle(context, true, "code" to code)
             }
+            it.isEnabled = true
         }
     }
 }
@@ -116,6 +139,10 @@ class MainActivity : Activity(), KodeinAware {
 
     private val promptDialog: PromptDialog by instance()
 
+    var phone = ""
+
+    var urls = ""
+
     private val receiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context, intent: Intent) {
@@ -127,12 +154,7 @@ class MainActivity : Activity(), KodeinAware {
         }
     }
 
-    val currentFragment: BaseFragment?
-        get() = fragmentManager.run {
-            findFragmentByTag((backStackEntryCount - 1).toString()) as BaseFragment?
-        }
-
-    @SuppressLint("SetTextI18n", "BatteryLife")
+    @SuppressLint("BatteryLife")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
@@ -142,10 +164,20 @@ class MainActivity : Activity(), KodeinAware {
         }
         tv_id.text = preferences.appId
         swt_run.setOnCheckedChangeListener { buttonView, isChecked ->
-            buttonView.isEnabled = false
             if (isChecked) {
-
+                preferences.bulk {
+                    telephone?.let {
+                        val phone = phone.trim()
+                        if (phone.isEmpty()) {
+                            toast("Заполните телефон")
+                            return@setOnCheckedChangeListener
+                        }
+                        telephone = phone
+                    }
+                    urlList = urls.trim()
+                }
             }
+            buttonView.isEnabled = false
             if (MainService.toggle(applicationContext, isChecked)) {
                 preferences.runApp = isChecked
             }
