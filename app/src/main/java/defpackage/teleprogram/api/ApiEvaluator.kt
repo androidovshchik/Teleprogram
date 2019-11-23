@@ -14,6 +14,8 @@ import java.lang.ref.WeakReference
 @Keep
 interface Android {
 
+    fun getAppId(): String
+
     fun sendTeleMessage(message: String)
 
     fun makeGetRequest(url: String): String?
@@ -32,6 +34,10 @@ class ApiEvaluator(context: Context) : KodeinAware, Android {
     private val okHttpClient: OkHttpClient by instance()
 
     private val database: Database by instance()
+
+    override fun getAppId(): String {
+        return preferences.appId.toString()
+    }
 
     override fun sendTeleMessage(message: String) {
         //teleClient.messages.add(TeleMessage())

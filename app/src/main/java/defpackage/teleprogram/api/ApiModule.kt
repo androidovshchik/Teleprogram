@@ -20,6 +20,10 @@ val apiModule = Kodein.Module("api") {
         CronManager(instance())
     }
 
+    bind<FileManager>() with provider {
+        FileManager(instance())
+    }
+
     bind<TeleClient>() with eagerSingleton {
         TeleClient(instance())
     }

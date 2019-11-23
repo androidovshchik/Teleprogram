@@ -164,7 +164,7 @@ class MainActivity : Activity(), KodeinAware {
             findFragmentByTag((backStackEntryCount - 1).toString()) as BaseFragment?
         }
 
-    @SuppressLint("BatteryLife")
+    @SuppressLint("BatteryLife", "SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
@@ -186,7 +186,10 @@ class MainActivity : Activity(), KodeinAware {
                             view.isChecked = false
                             return@setOnCheckedChangeListener
                         }
-                        (currentFragment as? MainFragment)?.et_phone?.isEnabled = false
+                        (currentFragment as? MainFragment)?.et_phone?.apply {
+                            setText("+$phone")
+                            isEnabled = false
+                        }
                         telephone = phone
                     }
                     urlList = urls.trim()
@@ -211,10 +214,6 @@ class MainActivity : Activity(), KodeinAware {
             }
         }
         registerReceiver(receiver, IntentFilter(ACTION_TELEGRAM))
-    }
-
-    override fun onStart() {
-        super.onStart()
         MainService.toggle(applicationContext, preferences.runApp)
     }
 

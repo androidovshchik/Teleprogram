@@ -10,6 +10,8 @@ import androidx.core.app.NotificationCompat
 import defpackage.teleprogram.api.TeleClient
 import defpackage.teleprogram.extensions.isRunning
 import defpackage.teleprogram.extensions.startForegroundService
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.ticker
 import org.jetbrains.anko.*
 import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
@@ -18,7 +20,7 @@ import org.kodein.di.generic.instance
 import timber.log.Timber
 
 @SuppressLint("InlinedApi")
-class MainService : Service(), KodeinAware {
+class MainService : Service(), KodeinAware, CoroutineScope {
 
     private val parentKodein by closestKodein()
 
@@ -29,6 +31,8 @@ class MainService : Service(), KodeinAware {
         import(mainModule)
     }
 
+    private val serviceJob = SupervisorJob()
+
     private val teleClient: TeleClient by instance()
 
     private var wakeLock: PowerManager.WakeLock? = null
@@ -37,6 +41,7 @@ class MainService : Service(), KodeinAware {
         return null
     }
 
+    @ObsoleteCoroutinesApi
     override fun onCreate() {
         super.onCreate()
         startForeground(
@@ -49,6 +54,16 @@ class MainService : Service(), KodeinAware {
                 .build()
         )
         acquireWakeLock()
+        "\\\\*(.|\\n)*?\\*/".toRegex()
+        val tickerChannel = ticker(15_000, 0)
+        launch {
+            for (event in tickerChannel) {
+
+            }
+        }
+
+// when you're done with the ticker and don't want more events
+        tickerChannel.cancel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -76,6 +91,11 @@ class MainService : Service(), KodeinAware {
         releaseWakeLock()
         super.onDestroy()
     }
+
+    override val coroutineContext =
+        Dispatchers.Main + serviceJob + CoroutineExceptionHandler { _, e ->
+            Timber.e(e)
+        }
 
     companion object {
 

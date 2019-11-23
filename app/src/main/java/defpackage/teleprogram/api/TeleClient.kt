@@ -29,7 +29,10 @@ class TeleClient(context: Context) {
 
     init {
         sendSync<OK>(TdApi.SetLogVerbosityLevel(2))
-        val tdLibParams = TdApi.TdlibParameters(
+        sendAsync(TdApi.SetDatabaseEncryptionKey("teleprogram".toByteArray()))
+        sendAsync(
+            TdApi.SetTdlibParameters(
+                TdApi.TdlibParameters(
             false,
             context.getDatabasePath("app").parent,
             context.filesDir.absolutePath,
@@ -45,15 +48,9 @@ class TeleClient(context: Context) {
             BuildConfig.VERSION_NAME,
             true,
             false
+                )
+            )
         )
-        sendAsync<OK>(TdApi.SetTdlibParameters(tdLibParams)) { _ ->
-            val key = "teleprogram".toByteArray()
-            sendAsync<OK>(TdApi.SetDatabaseEncryptionKey(key)) { _ ->
-                sendAsync<TdApi.AuthorizationState>(TdApi.GetAuthorizationState()) {
-
-                }
-            }
-        }
     }
 
     @Suppress("UNCHECKED_CAST")
