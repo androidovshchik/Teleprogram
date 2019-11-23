@@ -7,10 +7,7 @@ import defpackage.teleprogram.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.kodein.di.Kodein
-import org.kodein.di.generic.bind
-import org.kodein.di.generic.instance
-import org.kodein.di.generic.provider
-import org.kodein.di.generic.singleton
+import org.kodein.di.generic.*
 import timber.log.Timber
 
 val apiModule = Kodein.Module("api") {
@@ -23,7 +20,7 @@ val apiModule = Kodein.Module("api") {
         CronManager(instance())
     }
 
-    bind<TeleClient>() with singleton {
+    bind<TeleClient>() with eagerSingleton {
         TeleClient(instance())
     }
 

@@ -22,6 +22,7 @@ import androidx.core.widget.addTextChangedListener
 import com.chibatching.kotpref.bulk
 import defpackage.teleprogram.api.Preferences
 import defpackage.teleprogram.extensions.isMarshmallowPlus
+import defpackage.teleprogram.extensions.lock
 import defpackage.teleprogram.extensions.makeCallback
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.dialog_prompt.*
@@ -117,13 +118,13 @@ class PromptDialog(activity: Activity) : Dialog(activity, R.style.AppDialog) {
         super.onCreate(savedInstanceState)
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(R.layout.dialog_prompt)
-        btn_ok.setOnClickListener {
-            it.isEnabled = false
-            val code = et_code.text.toString().trim()
-            if (code.isNotEmpty()) {
-                MainService.toggle(context, true, "code" to code)
+        btn_ok.setOnClickListener { view ->
+            view.lock {
+                val code = et_code.text.toString().trim()
+                if (code.isNotEmpty()) {
+                    MainService.toggle(context, true, "code" to code)
+                }
             }
-            it.isEnabled = true
         }
     }
 }
@@ -143,9 +144,9 @@ class MainActivity : Activity(), KodeinAware {
 
     private val promptDialog: PromptDialog by instance()
 
-    var phone = ""
+    var phone: String = ""
 
-    var urls = ""
+    var urls: String = ""
 
     private val receiver = object : BroadcastReceiver() {
 
@@ -175,14 +176,14 @@ class MainActivity : Activity(), KodeinAware {
             tv_id.text = appId
             swt_run.isChecked = runApp
         }
-        swt_run.setOnCheckedChangeListener { buttonView, isChecked ->
+        swt_run.setOnCheckedChangeListener { view, isChecked ->
             if (isChecked) {
                 preferences.bulk {
                     if (TextUtils.isEmpty(telephone)) {
                         val phone = phone.replace("[^\\d]".toRegex(), "")
                         if (phone.isEmpty()) {
                             toast("Заполните телефон")
-                            buttonView.isChecked = false
+                            view.isChecked = false
                             return@setOnCheckedChangeListener
                         }
                         (currentFragment as? MainFragment)?.et_phone?.isEnabled = false
@@ -191,11 +192,11 @@ class MainActivity : Activity(), KodeinAware {
                     urlList = urls.trim()
                 }
             }
-            buttonView.isEnabled = false
-            if (MainService.toggle(applicationContext, isChecked)) {
-                preferences.runApp = isChecked
+            view.lock {
+                if (MainService.toggle(applicationContext, isChecked)) {
+                    preferences.runApp = isChecked
+                }
             }
-            buttonView.isEnabled = true
         }
         addFragment(MainFragment())
         // NOTICE this violates Google Play policy

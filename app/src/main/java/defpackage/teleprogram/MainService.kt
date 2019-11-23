@@ -42,8 +42,8 @@ class MainService : Service(), KodeinAware {
         startForeground(
             Int.MAX_VALUE, NotificationCompat.Builder(applicationContext, "low")
                 .setSmallIcon(R.drawable.ic_tv)
-                .setContentTitle("Teleprogram watch")
-                .setContentText("(-, - )…zzzZZZ")
+                .setContentTitle("Teleprogram watching")
+                .setContentText("(ﾉ◕ヮ◕)ﾉ*:・ﾟ✧")
                 .setOngoing(true)
                 .setSound(null)
                 .build()

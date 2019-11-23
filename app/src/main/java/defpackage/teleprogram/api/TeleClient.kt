@@ -28,18 +28,24 @@ class TeleClient(context: Context) {
     val messages = LinkedBlockingQueue<TeleMessage>()
 
     init {
-        val tdLibParams = TdApi.TdlibParameters().apply {
-            apiId = 492093
-            apiHash = "95a11c4c658f568f7aeb0e8db4e12e12"
-            databaseDirectory = context.cacheDir.absolutePath
-            filesDirectory = context.filesDir.absolutePath
-            applicationVersion = BuildConfig.VERSION_NAME
-            deviceModel = Build.MODEL
-            systemVersion = Build.VERSION.RELEASE
-            systemLanguageCode =
-                ConfigurationCompat.getLocales(context.resources.configuration).get(0).language
-        }
         sendSync<OK>(TdApi.SetLogVerbosityLevel(2))
+        val tdLibParams = TdApi.TdlibParameters(
+            false,
+            context.getDatabasePath("app").parent,
+            context.filesDir.absolutePath,
+            true,
+            true,
+            true,
+            true,
+            492093,
+            "95a11c4c658f568f7aeb0e8db4e12e12",
+            ConfigurationCompat.getLocales(context.resources.configuration).get(0).language,
+            Build.DEVICE,
+            Build.VERSION.RELEASE,
+            BuildConfig.VERSION_NAME,
+            true,
+            false
+        )
         sendAsync<OK>(TdApi.SetTdlibParameters(tdLibParams)) { _ ->
             val key = "teleprogram".toByteArray()
             sendAsync<OK>(TdApi.SetDatabaseEncryptionKey(key)) { _ ->
