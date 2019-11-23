@@ -11,6 +11,6 @@ class RebootReceiver : BroadcastReceiver() {
     @SuppressLint("UnsafeProtectedBroadcastReceiver")
     override fun onReceive(context: Context, intent: Intent) {
         val preferences = Preferences(context)
-        MainService.toggleService(context, preferences.runApp)
+        MainService.toggle(context, preferences.runApp)
     }
 }

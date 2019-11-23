@@ -75,13 +75,13 @@ class MainService : Service(), KodeinAware {
 
     companion object {
 
-        fun toggleService(c: Context, run: Boolean, vararg p: Pair<String, Any?>): Boolean = c.run {
+        fun toggle(c: Context, run: Boolean, vararg params: Pair<String, Any?>): Boolean = c.run {
             return if (run) {
                 try {
                     if (!activityManager.isRunning<MainService>()) {
                         startForegroundService<MainService>() != null
                     } else {
-                        startService<MainService>(*p) != null
+                        startService<MainService>(*params) != null
                     }
                 } catch (e: Throwable) {
                     Timber.e(e)

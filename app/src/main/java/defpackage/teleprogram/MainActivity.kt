@@ -14,9 +14,12 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.view.*
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import defpackage.teleprogram.api.Preferences
 import defpackage.teleprogram.extensions.isMarshmallowPlus
 import defpackage.teleprogram.extensions.makeCallback
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.dialog_prompt.*
 import kotlinx.android.synthetic.main.fragment_api.*
 import kotlinx.android.synthetic.main.fragment_main.*
@@ -31,14 +34,27 @@ abstract class BaseFragment : Fragment(), KodeinAware {
     override val kodein by closestKodein()
 }
 
+class WebClient : WebViewClient() {
+
+    override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+        view.loadUrl(url)
+        return true
+    }
+}
+
 class ApiFragment : BaseFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, bundle: Bundle?): View {
         return inflater.inflate(R.layout.fragment_api, parent, false)
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        wv_api.loadUrl("file:///android_asset/app/${activity?.packageName}.api/-android/index.html")
+        wv_api.apply {
+            settings.javaScriptEnabled = true
+            webViewClient = WebClient()
+            loadUrl("file:///android_asset/app/${activity?.packageName}.api/-android/index.html")
+        }
     }
 }
 
@@ -104,6 +120,10 @@ class MainActivity : Activity(), KodeinAware {
         super.onCreate(savedInstanceState)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
         setContentView(R.layout.activity_main)
+        ib_back.setOnClickListener {
+            onBackPressed()
+        }
+        tv_id.text = preferences.appId
         addFragment(MainFragment())
         // NOTICE this violates Google Play policy
         if (isMarshmallowPlus()) {
@@ -121,7 +141,7 @@ class MainActivity : Activity(), KodeinAware {
 
     override fun onStart() {
         super.onStart()
-        MainService.toggleService(applicationContext, preferences.runApp)
+        MainService.toggle(applicationContext, preferences.runApp)
     }
 
     fun addFragment(fragment: BaseFragment) {
@@ -131,6 +151,14 @@ class MainActivity : Activity(), KodeinAware {
                 .addToBackStack(null)
                 .commitAllowingStateLoss()
             executePendingTransactions()
+        }
+    }
+
+    override fun onBackPressed() {
+        if (fragmentManager.backStackEntryCount > 1) {
+            super.onBackPressed()
+        } else {
+            finish()
         }
     }
 
