@@ -20,6 +20,7 @@
         tools:replace="android:allowBackup">
         <activity
             android:name=".MainActivity"
+            android:windowSoftInputMode="stateHidden"
             android:screenOrientation="sensorPortrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

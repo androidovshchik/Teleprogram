@@ -16,7 +16,7 @@
         android:singleLine="true"
         android:maxLines="1"
         android:imeOptions="actionDone"
-        android:hint="Введите код"
+        android:hint="Код телеграма"
         android:background="@null" />
 
     <Button

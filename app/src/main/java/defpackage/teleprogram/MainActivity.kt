@@ -10,6 +10,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
@@ -34,11 +35,15 @@ abstract class BaseFragment : Fragment(), KodeinAware {
     override val kodein by closestKodein()
 }
 
-class WebClient : WebViewClient() {
+class WebClient(val postscript: String) : WebViewClient() {
 
     override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
         view.loadUrl(url)
         return true
+    }
+
+    override fun onPageFinished(view: WebView, url: String?) {
+        view.loadUrl("javascript:$postscript")
     }
 }
 
@@ -51,8 +56,12 @@ class ApiFragment : BaseFragment() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         wv_api.apply {
+            setBackgroundColor(Color.TRANSPARENT)
             settings.javaScriptEnabled = true
-            webViewClient = WebClient()
+            webViewClient = WebClient(context.assets.open("postscript.js")
+                .bufferedReader().use {
+                    it.readText().replace("(\r\n|\r|\n)".toRegex(), "")
+                })
             loadUrl("file:///android_asset/app/${activity?.packageName}.api/-android/index.html")
         }
     }
@@ -73,7 +82,7 @@ class MainFragment : BaseFragment() {
     }
 }
 
-class PromptDialog(activity: Activity) : Dialog(activity) {
+class PromptDialog(activity: Activity) : Dialog(activity, R.style.AppDialog) {
 
     init {
         setCancelable(false)
@@ -84,7 +93,10 @@ class PromptDialog(activity: Activity) : Dialog(activity) {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(R.layout.dialog_prompt)
         btn_ok.setOnClickListener {
-
+            val code = et_code.text.toString().trim()
+            if (code.isNotEmpty()) {
+                MainService.toggle(context, true, "code" to code)
+            }
         }
     }
 }
@@ -115,6 +127,11 @@ class MainActivity : Activity(), KodeinAware {
         }
     }
 
+    val currentFragment: BaseFragment?
+        get() = fragmentManager.run {
+            findFragmentByTag((backStackEntryCount - 1).toString()) as BaseFragment?
+        }
+
     @SuppressLint("SetTextI18n", "BatteryLife")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -124,6 +141,16 @@ class MainActivity : Activity(), KodeinAware {
             onBackPressed()
         }
         tv_id.text = preferences.appId
+        swt_run.setOnCheckedChangeListener { buttonView, isChecked ->
+            buttonView.isEnabled = false
+            if (isChecked) {
+
+            }
+            if (MainService.toggle(applicationContext, isChecked)) {
+                preferences.runApp = isChecked
+            }
+            buttonView.isEnabled = true
+        }
         addFragment(MainFragment())
         // NOTICE this violates Google Play policy
         if (isMarshmallowPlus()) {
@@ -136,7 +163,7 @@ class MainActivity : Activity(), KodeinAware {
                 )
             }
         }
-        registerReceiver(receiver, IntentFilter("TGM_PROMPT"))
+        registerReceiver(receiver, IntentFilter(ACTION_TELEGRAM))
     }
 
     override fun onStart() {
@@ -166,5 +193,10 @@ class MainActivity : Activity(), KodeinAware {
         promptDialog.dismiss()
         unregisterReceiver(receiver)
         super.onDestroy()
+    }
+
+    companion object {
+
+        const val ACTION_TELEGRAM = "TGM_PROMPT"
     }
 }
