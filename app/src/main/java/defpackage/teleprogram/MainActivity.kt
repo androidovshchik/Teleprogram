@@ -2,10 +2,8 @@
 
 package defpackage.teleprogram
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.AlertDialog
 import android.app.Dialog
 import android.app.Fragment
 import android.content.BroadcastReceiver
@@ -16,17 +14,18 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.view.*
-import androidx.sqlite.db.SimpleSQLiteQuery
-import defpackage.teleprogram.api.Preferences
+import defpackage.teleprogram.extensions.isMarshmallowPlus
+import defpackage.teleprogram.extensions.makeCallback
 import kotlinx.android.synthetic.main.dialog_prompt.*
-import org.jetbrains.anko.activityUiThread
-import org.jetbrains.anko.doAsync
+import kotlinx.android.synthetic.main.fragment_api.*
+import kotlinx.android.synthetic.main.fragment_main.*
 import org.jetbrains.anko.powerManager
 import org.jetbrains.anko.toast
+import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
 import org.kodein.di.android.closestKodein
+import org.kodein.di.generic.instance
 import timber.log.Timber
-import java.lang.ref.WeakReference
 
 abstract class BaseFragment : Fragment(), KodeinAware {
 
@@ -35,23 +34,27 @@ abstract class BaseFragment : Fragment(), KodeinAware {
 
 class ApiFragment : BaseFragment() {
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_api, container, false)
+    override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, bundle: Bundle?): View {
+        return inflater.inflate(R.layout.fragment_api, parent, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        wv_api.loadUrl("file:///android_asset/app/${activity?.packageName}.api/-android/index.html")
     }
 }
 
 class MainFragment : BaseFragment() {
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_main, container, false)
+    override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, bundle: Bundle?): View {
+        return inflater.inflate(R.layout.fragment_main, parent, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        btn_api.setOnClickListener {
+            activity.makeCallback<MainActivity> {
+                setFragment(ApiFragment())
+            }
+        }
     }
 }
 
@@ -73,11 +76,16 @@ class PromptDialog(activity: Activity) : Dialog(activity) {
 
 class MainActivity : Activity(), KodeinAware {
 
-    override val kodein by closestKodein()
+    private val parentKodein by closestKodein()
 
-    private lateinit var preferences: Preferences
+    override val kodein: Kodein by Kodein.lazy {
 
-    private lateinit var promptDialog: AlertDialog
+        extend(parentKodein)
+
+        import(mainModule)
+    }
+
+    private val promptDialog: PromptDialog by instance()
 
     private val receiver = object : BroadcastReceiver() {
 
@@ -92,90 +100,12 @@ class MainActivity : Activity(), KodeinAware {
         }
     }
 
-    @SuppressLint("SetTextI18n")
+    @SuppressLint("SetTextI18n", "BatteryLife")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
         setContentView(R.layout.activity_main)
-        preferences.apply {
-            phone?.let {
-                phone_number.setText("+$it")
-            }
-            proxies.setSelection(proxyType, false)
-            proxy_url.apply {
-                isEnabled = proxyType > 0
-                setText(proxyUrl)
-            }
-            switch_run.isChecked = runService
-            enable_log.isChecked = enableLog
-        }
-        proxies.onItemSelectedListener {
-            onItemSelected { _, _, position, _ ->
-                preferences.proxyType = position
-                proxy_url.isEnabled = position > 0
-            }
-        }
-        switch_run.setOnCheckedChangeListener { buttonView, isChecked ->
-            buttonView.isEnabled = false
-            if (isChecked) {
-                if (preferences.phone == null) {
-                    val number = phone_number.text.toString()
-                        .replace(MainService.phoneRegex, "")
-                    if (number.length != 11) {
-                        toast("Заполните телефон")
-                        buttonView.apply {
-                            setChecked(false)
-                            isEnabled = true
-                        }
-                        return@setOnCheckedChangeListener
-                    }
-                    preferences.phone = number
-                }
-                if (preferences.proxyType > 0) {
-                    val proxy = proxy_url.text.toString()
-                    if (!MainService.proxyRegex.matches(proxy)) {
-                        toast("Заполните прокси")
-                        buttonView.apply {
-                            setChecked(false)
-                            isEnabled = true
-                        }
-                        return@setOnCheckedChangeListener
-                    }
-                    preferences.proxyUrl = proxy
-                }
-                preferences.lastTime = currentTimeMillis()
-                if (!areGranted(Manifest.permission.READ_SMS)) {
-                    toast("Требуется предоставить разрешения")
-                    buttonView.apply {
-                        setChecked(false)
-                        isEnabled = true
-                    }
-                    return@setOnCheckedChangeListener
-                }
-            }
-            if (toggleService(isChecked)) {
-                preferences.runService = isChecked
-            }
-            buttonView.isEnabled = true
-        }
-        export_db.setOnClickListener { view ->
-            view.isEnabled = false
-            val viewRef = WeakReference(view)
-            doAsync {
-                MainApp.db.baseDao().checkpoint(SimpleSQLiteQuery("pragma wal_checkpoint(full)"))
-                copyDb(viewRef.get()?.context)
-                activityUiThread {
-                    toast("БД успешно экспортировано")
-                    viewRef.get()?.isEnabled = true
-                }
-            }
-        }
-        enable_log.setOnCheckedChangeListener { buttonView, isChecked ->
-            buttonView.isEnabled = false
-            preferences.enableLog = isChecked
-            LogTree.saveToFile = isChecked
-            buttonView.isEnabled = true
-        }
+        setFragment(MainFragment())
         // NOTICE this violates Google Play policy
         if (isMarshmallowPlus()) {
             if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
@@ -186,9 +116,6 @@ class MainActivity : Activity(), KodeinAware {
                     )
                 )
             }
-        }
-        if (!areGranted(Manifest.permission.READ_SMS)) {
-            requestPermissions(100, Manifest.permission.READ_SMS)
         }
         registerReceiver(receiver, IntentFilter("TGM_PROMPT"))
     }
@@ -210,6 +137,17 @@ class MainActivity : Activity(), KodeinAware {
         } else {
             MainService.stop(applicationContext)
         }
+    }
+
+    fun setFragment(fragment: BaseFragment) {
+        if (getCurrentFragment() is MenuFragment) {
+            while (popFragment(true));
+        }
+        fragmentManager.beginTransaction()
+            .replace(R.id.frg_main, fragment, supportFragmentManager.backStackEntryCount.toString())
+            .addToBackStack(null)
+            .commitAllowingStateLoss()
+        fragmentManager.executePendingTransactions()
     }
 
     override fun onDestroy() {

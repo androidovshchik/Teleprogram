@@ -33,7 +33,7 @@
         android:lines="5"
         android:maxLines="5"
         android:textSize="16sp"
-        android:hint="// one line comment\nhttps://gist.githubusercontent.com/...\n/*\nMultiline comment\n*/" />
+        android:hint="https://gist.githubusercontent.com/...\n/*\nMultiline comment\n*/" />
 
     <Button
         android:id="@+id/btn_api"

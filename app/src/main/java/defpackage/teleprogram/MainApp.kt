@@ -22,8 +22,6 @@ class MainApp : Application(), KodeinAware {
             applicationContext
         }
 
-        import(mainModule)
-
         import(apiModule)
     }
 

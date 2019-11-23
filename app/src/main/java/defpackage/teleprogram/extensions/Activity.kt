@@ -10,7 +10,7 @@ fun Activity.requestPermissions(requestCode: Int, vararg permissions: String) {
     }
 }
 
-inline fun <reified T> Activity.makeCallback(action: T.() -> Unit) {
+inline fun <reified T> Activity?.makeCallback(action: T.() -> Unit) {
     if (this is T && !isFinishing) {
         action()
     }

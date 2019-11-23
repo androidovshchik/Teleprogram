@@ -19,6 +19,10 @@ val apiModule = Kodein.Module("api") {
         Preferences(instance())
     }
 
+    bind<CronManager>() with provider {
+        CronManager(instance())
+    }
+
     bind<TeleClient>() with singleton {
         TeleClient(instance())
     }
