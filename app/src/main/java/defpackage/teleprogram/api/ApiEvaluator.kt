@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.annotation.Keep
 import com.couchbase.lite.Database
 import defpackage.teleprogram.MainService
+import defpackage.teleprogram.model.Script
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.kodein.di.KodeinAware
@@ -17,7 +18,9 @@ interface Android {
 
     fun getAppId(): String
 
-    fun registerApplet()
+    fun registerScript(type: Int, url: String)
+
+    fun unregisterScript(url: String)
 
     fun sendTeleMessage(message: String)
 
@@ -40,7 +43,20 @@ class ApiEvaluator(context: Context) : KodeinAware, Android {
         return preferences.appId.toString()
     }
 
-    override fun registerApplet() {
+    override fun registerScript(type: Int, url: String) {
+        when (type) {
+            Script.EVENT_MESSAGE.id -> {
+            }
+            Script.WORK_ATTEMPT.id -> {
+            }
+            Script.WORK_SINGLE.id -> {
+            }
+            Script.WORK_REPEAT.id -> {
+            }
+        }
+    }
+
+    override fun unregisterScript(url: String) {
 
     }
 

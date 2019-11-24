@@ -65,6 +65,8 @@ class MainService : Service(), KodeinAware, CoroutineScope {
 
     //private lateinit var ticker: ReceiveChannel<Unit>
 
+    private lateinit var wakeLock: PowerManager.WakeLock
+
     private val client: Client = Client.create({
         when (it.constructor) {
             TdApi.UpdateNewMessage.CONSTRUCTOR -> {
@@ -76,8 +78,6 @@ class MainService : Service(), KodeinAware, CoroutineScope {
     private val messages = LinkedBlockingQueue<TeleMessage>()
 
     private val isAuthorized = AtomicBoolean(false)
-
-    private lateinit var wakeLock: PowerManager.WakeLock
 
     override fun onBind(intent: Intent): IBinder? {
         return null
@@ -151,7 +151,11 @@ class MainService : Service(), KodeinAware, CoroutineScope {
                     }
                 }
                 if (scripts.isNotEmpty()) {
-                    duktape.evaluate(TextUtils.join(";", scripts))
+                    try {
+                        duktape.evaluate(TextUtils.join(";", scripts))
+                    } catch (e: Throwable) {
+                        Timber.e(e)
+                    }
                 }
             }
             /*for (event in ticker) {
@@ -161,14 +165,18 @@ class MainService : Service(), KodeinAware, CoroutineScope {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        intent?.let {
-            if (it.hasExtra("code")) {
-                sendAsync<OK>(TdApi.CheckAuthenticationCode(it.getStringExtra("code"))) {
-                    isAuthorized.compareAndSet(false, obj.constructor == TdApi.Ok.CONSTRUCTOR)
-                    sendBroadcast(Intent("TGM_PROMPT").apply {
-                        putExtra("prompted", obj.constructor == TdApi.Ok.CONSTRUCTOR)
+        if (intent != null) {
+            if (intent.hasExtra(EXTRA_CODE)) {
+                sendAsync<OK>(TdApi.CheckAuthenticationCode(intent.getStringExtra(EXTRA_CODE))) {
+                    isAuthorized.compareAndSet(false, it != null)
+                    sendBroadcast(Intent(ACTION_TELEGRAM).apply {
+                        putExtra(MainActivity.EXTRA_PROMPT, it != null)
                     })
                 }
+            }
+            if (intent.hasExtra(EXTRA_MESSAGE)) {
+                val message = intent.getSerializableExtra(EXTRA_MESSAGE) as TeleMessage
+                messages.put(message)
             }
         }
         return START_STICKY
@@ -203,24 +211,32 @@ class MainService : Service(), KodeinAware, CoroutineScope {
 
     companion object {
 
-        fun toggle(c: Context, run: Boolean, vararg params: Pair<String, Any?>): Boolean = c.run {
-            return if (run) {
-                try {
-                    if (activityManager.isRunning<MainService>()) {
-                        startService<MainService>(*params) != null
-                    } else {
-                        startForegroundService<MainService>() != null
+        const val ACTION_TELEGRAM = "action_telegram"
+
+        const val EXTRA_CODE = "extra_code"
+
+        const val EXTRA_MESSAGE = "extra_message"
+
+        fun toggle(context: Context, run: Boolean, vararg params: Pair<String, Any?>): Boolean {
+            context.run {
+                return if (run) {
+                    try {
+                        if (activityManager.isRunning<MainService>()) {
+                            startService<MainService>(*params) != null
+                        } else {
+                            startForegroundService<MainService>() != null
+                        }
+                    } catch (e: Throwable) {
+                        Timber.e(e)
+                        toast(e.toString())
+                        false
                     }
-                } catch (e: Throwable) {
-                    Timber.e(e)
-                    toast(e.toString())
-                    false
-                }
-            } else {
-                if (activityManager.isRunning<MainService>()) {
-                    stopService<MainService>()
                 } else {
-                    true
+                    if (activityManager.isRunning<MainService>()) {
+                        stopService<MainService>()
+                    } else {
+                        true
+                    }
                 }
             }
         }

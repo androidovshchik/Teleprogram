@@ -152,7 +152,9 @@ class MainActivity : Activity(), KodeinAware {
 
     var phone: String = ""
 
-    var urls: String = ""
+    var baseUrl: String = ""
+
+    var mainUrl: String = ""
 
     private val receiver = object : BroadcastReceiver() {
 
@@ -248,6 +250,6 @@ class MainActivity : Activity(), KodeinAware {
 
     companion object {
 
-        const val ACTION_TELEGRAM = "TGM_PROMPT"
+        const val EXTRA_PROMPT = "extra_prompt"
     }
 }

@@ -11,11 +11,11 @@ class Preferences(context: Context) : KotprefModel(context) {
 
     var telephone by nullableStringPref(null, "telephone")
 
-    var listUrl by nullableStringPref(null, "url_list")
+    var baseUrl by nullableStringPref(null, "base_url")
+
+    var mainUrl by nullableStringPref(null, "main_url")
 
     var runApp by booleanPref(false, "run_app")
-
-    var lastLaunch by longPref(0L, "last_launch")
 
     init {
         if (appId == null) {

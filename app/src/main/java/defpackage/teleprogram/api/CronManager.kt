@@ -15,7 +15,7 @@ class ApiWorker(context: Context, params: WorkerParameters) : CoroutineWorker(co
         Duktape.create().use {
             it.set("Android", Android::class.java, ApiEvaluator(applicationContext))
             when {
-                it.evaluate(javascript) == 0 -> Result.success()
+                it.evaluate(javascript) == RESULT_OK -> Result.success()
                 retry -> Result.retry()
                 else -> Result.failure()
             }
@@ -27,6 +27,8 @@ class ApiWorker(context: Context, params: WorkerParameters) : CoroutineWorker(co
         const val PARAM_RETRY = "retry"
 
         const val PARAM_JAVASCRIPT = "javascript"
+
+        private const val RESULT_OK = 0
     }
 }
 
