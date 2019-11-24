@@ -3,6 +3,7 @@ package defpackage.teleprogram.api
 import android.content.Context
 import androidx.annotation.Keep
 import com.couchbase.lite.Database
+import defpackage.teleprogram.MainService
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.kodein.di.KodeinAware
@@ -31,8 +32,6 @@ class ApiEvaluator(context: Context) : KodeinAware, Android {
 
     private val preferences: Preferences by instance()
 
-    private val teleClient: TeleClient by instance()
-
     private val okHttpClient: OkHttpClient by instance()
 
     private val database: Database by instance()
@@ -46,7 +45,9 @@ class ApiEvaluator(context: Context) : KodeinAware, Android {
     }
 
     override fun sendTeleMessage(message: String) {
-        //teleClient.messages.add(TeleMessage())
+        reference.get()?.let {
+            MainService.toggle(it, true)
+        }
     }
 
     override fun makeGetRequest(url: String): String? {

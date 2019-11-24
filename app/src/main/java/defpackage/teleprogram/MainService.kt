@@ -4,19 +4,25 @@ import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.text.TextUtils
 import androidx.core.app.NotificationCompat
+import androidx.core.os.ConfigurationCompat
 import com.squareup.duktape.Duktape
-import defpackage.teleprogram.api.*
+import defpackage.teleprogram.api.Android
+import defpackage.teleprogram.api.ApiEvaluator
+import defpackage.teleprogram.api.FileManager
+import defpackage.teleprogram.api.Preferences
 import defpackage.teleprogram.extensions.isConnected
 import defpackage.teleprogram.extensions.isRunning
 import defpackage.teleprogram.extensions.pendingActivityFor
 import defpackage.teleprogram.extensions.startForegroundService
+import defpackage.teleprogram.model.TeleMessage
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.ticker
+import org.drinkless.td.libcore.telegram.Client
+import org.drinkless.td.libcore.telegram.TdApi
 import org.jetbrains.anko.*
 import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
@@ -24,8 +30,16 @@ import org.kodein.di.android.closestKodein
 import org.kodein.di.generic.instance
 import timber.log.Timber
 import java.io.File
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.atomic.AtomicBoolean
 
 private typealias A = Android
+
+private typealias OK = TdApi.Ok
+
+private typealias OBJ = TdApi.Object
+
+private typealias FUN = TdApi.Function
 
 @SuppressLint("InlinedApi")
 class MainService : Service(), KodeinAware, CoroutineScope {
@@ -43,22 +57,33 @@ class MainService : Service(), KodeinAware, CoroutineScope {
 
     private val preferences: Preferences by instance()
 
-    private val apiEvaluator: ApiEvaluator by instance()
-
-    private val teleClient: TeleClient by instance()
-
     private val fileManager: FileManager by instance()
 
     private val duktape: Duktape by instance()
 
-    private lateinit var ticker: ReceiveChannel<Unit>
+    private val apiEvaluator: ApiEvaluator by instance()
 
-    private var wakeLock: PowerManager.WakeLock? = null
+    //private lateinit var ticker: ReceiveChannel<Unit>
+
+    private val client: Client = Client.create({
+        when (it.constructor) {
+            TdApi.UpdateNewMessage.CONSTRUCTOR -> {
+
+            }
+        }
+    }, null, null)
+
+    private val messages = LinkedBlockingQueue<TeleMessage>()
+
+    private val isAuthorized = AtomicBoolean(false)
+
+    private lateinit var wakeLock: PowerManager.WakeLock
 
     override fun onBind(intent: Intent): IBinder? {
         return null
     }
 
+    @SuppressLint("WakelockTimeout")
     @ObsoleteCoroutinesApi
     override fun onCreate() {
         super.onCreate()
@@ -72,9 +97,34 @@ class MainService : Service(), KodeinAware, CoroutineScope {
                 .setSound(null)
                 .build()
         )
-        acquireWakeLock()
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, javaClass.name).apply {
+            acquire()
+        }
         duktape.set("Android", A::class.java, apiEvaluator)
-        ticker = ticker(200, 0)
+        //ticker = ticker(200, 0)
+        sendSync(TdApi.SetLogVerbosityLevel(2))
+        sendAsync(TdApi.SetDatabaseEncryptionKey("teleprogram".toByteArray()))
+        sendAsync(
+            TdApi.SetTdlibParameters(
+                TdApi.TdlibParameters(
+                    false,
+                    getDatabasePath("app").parent,
+                    filesDir.absolutePath,
+                    true,
+                    true,
+                    true,
+                    true,
+                    492093,
+                    "95a11c4c658f568f7aeb0e8db4e12e12",
+                    ConfigurationCompat.getLocales(resources.configuration).get(0).language,
+                    Build.DEVICE,
+                    Build.VERSION.RELEASE,
+                    BuildConfig.VERSION_NAME,
+                    true,
+                    false
+                )
+            )
+        )
         launch {
             withContext(Dispatchers.IO) {
                 val scripts = arrayListOf<String>()
@@ -104,39 +154,46 @@ class MainService : Service(), KodeinAware, CoroutineScope {
                     duktape.evaluate(TextUtils.join(";", scripts))
                 }
             }
-            for (event in ticker) {
+            /*for (event in ticker) {
 
-            }
+            }*/
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        intent?.let {
+            if (it.hasExtra("code")) {
+                sendAsync<OK>(TdApi.CheckAuthenticationCode(it.getStringExtra("code"))) {
+                    isAuthorized.compareAndSet(false, obj.constructor == TdApi.Ok.CONSTRUCTOR)
+                    sendBroadcast(Intent("TGM_PROMPT").apply {
+                        putExtra("prompted", obj.constructor == TdApi.Ok.CONSTRUCTOR)
+                    })
+                }
+            }
+        }
         return START_STICKY
     }
 
-    @SuppressLint("WakelockTimeout")
-    private fun acquireWakeLock() {
-        if (wakeLock == null) {
-            wakeLock =
-                powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, javaClass.name).apply {
-                    acquire()
-                }
-        }
-    }
-
-    private fun releaseWakeLock() {
-        wakeLock?.let {
-            it.release()
-            wakeLock = null
-        }
-    }
-
     override fun onDestroy() {
-        ticker.cancel()
+        //ticker.cancel()
         serviceJob.cancelChildren()
         duktape.close()
-        releaseWakeLock()
+        wakeLock.release()
         super.onDestroy()
+    }
+
+    private fun sendSync(query: FUN) {
+        Client.execute(query)
+    }
+
+    private fun sendAsync(query: FUN) {
+        client.send(query, null)
+    }
+
+    private inline fun <reified T : OBJ> sendAsync(query: FUN, crossinline block: (T?) -> Unit) {
+        client.send(query) {
+            block(it as? T)
+        }
     }
 
     override val coroutineContext =

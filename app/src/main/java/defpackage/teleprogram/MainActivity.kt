@@ -35,6 +35,7 @@ import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
 import org.kodein.di.android.closestKodein
 import org.kodein.di.generic.instance
+import timber.log.Timber
 
 abstract class BaseFragment : Fragment(), KodeinAware {
 
@@ -191,6 +192,7 @@ class MainActivity : Activity(), KodeinAware {
                             view.isChecked = false
                             return@setOnCheckedChangeListener
                         }
+                        Timber.e("phone $phone")
                         (currentFragment as? MainFragment)?.updatePhone("+$phone")
                         telephone = phone
                     }
