@@ -1,6 +1,6 @@
 @file:Suppress("unused", "DEPRECATION")
 
-package defpackage.teleprogram.extensions
+package defpackage.teleprogram.extension
 
 import android.net.ConnectivityManager
 

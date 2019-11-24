@@ -1,6 +1,6 @@
 @file:Suppress("unused", "DEPRECATION")
 
-package defpackage.teleprogram.extensions
+package defpackage.teleprogram.extension
 
 import android.app.ActivityManager
 import android.app.Service

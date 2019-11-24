@@ -5,7 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import defpackage.teleprogram.api.apiModule
-import defpackage.teleprogram.extensions.isOreoPlus
+import defpackage.teleprogram.extension.isOreoPlus
 import org.jetbrains.anko.notificationManager
 import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware

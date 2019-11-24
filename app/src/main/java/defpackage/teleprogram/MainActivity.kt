@@ -21,10 +21,9 @@ import android.webkit.WebViewClient
 import androidx.core.widget.addTextChangedListener
 import com.chibatching.kotpref.bulk
 import defpackage.teleprogram.api.Preferences
-import defpackage.teleprogram.extensions.currentTimeMillis
-import defpackage.teleprogram.extensions.isMarshmallowPlus
-import defpackage.teleprogram.extensions.lock
-import defpackage.teleprogram.extensions.makeCallback
+import defpackage.teleprogram.extension.isMarshmallowPlus
+import defpackage.teleprogram.extension.lock
+import defpackage.teleprogram.extension.makeCallback
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.dialog_prompt.*
 import kotlinx.android.synthetic.main.fragment_api.*
@@ -35,7 +34,6 @@ import org.kodein.di.Kodein
 import org.kodein.di.KodeinAware
 import org.kodein.di.android.closestKodein
 import org.kodein.di.generic.instance
-import timber.log.Timber
 
 abstract class BaseFragment : Fragment(), KodeinAware {
 
@@ -62,12 +60,13 @@ class ApiFragment : BaseFragment() {
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        val postscript = activity?.assets?.open("postscript.js")?.bufferedReader()?.use {
+            it.readText().replace("(\r\n|\r|\n)".toRegex(), "")
+        }
         wv_api.apply {
             setBackgroundColor(Color.TRANSPARENT)
             settings.javaScriptEnabled = true
-            webViewClient = WebClient(context.assets.open("postscript.js").bufferedReader().use {
-                it.readText().replace("(\r\n|\r|\n)".toRegex(), "")
-            })
+            webViewClient = WebClient(postscript.toString())
             loadUrl("file:///android_asset/app/${activity?.packageName}.api/-android/index.html")
         }
     }
@@ -84,19 +83,25 @@ class MainFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         et_phone.addTextChangedListener {
             activity.makeCallback<MainActivity> {
-                phone = it.toString()
+                phoneValue = it.toString()
             }
         }
-        et_list.addTextChangedListener {
+        et_base.addTextChangedListener {
             activity.makeCallback<MainActivity> {
-                urls = it.toString()
+                baseValue = it.toString()
+            }
+        }
+        et_main.addTextChangedListener {
+            activity.makeCallback<MainActivity> {
+                mainValue = it.toString()
             }
         }
         preferences.apply {
             telephone?.let {
                 updatePhone(it)
             }
-            et_list.setText(listUrl)
+            et_base.setText(baseUrl)
+            et_main.setText(mainUrl)
         }
         btn_api.setOnClickListener {
             activity.makeCallback<MainActivity> {
@@ -128,7 +133,7 @@ class PromptDialog(activity: Activity) : Dialog(activity, R.style.AppDialog) {
             view.lock {
                 val code = et_code.text.toString().trim()
                 if (code.isNotEmpty()) {
-                    MainService.toggle(context, true, "code" to code)
+                    MainService.toggle(context, true, MainService.EXTRA_CODE to code)
                 }
             }
         }
@@ -150,16 +155,16 @@ class MainActivity : Activity(), KodeinAware {
 
     private val promptDialog: PromptDialog by instance()
 
-    var phone: String = ""
+    var phoneValue: String = ""
 
-    var baseUrl: String = ""
+    var baseValue: String = ""
 
-    var mainUrl: String = ""
+    var mainValue: String = ""
 
     private val receiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context, intent: Intent) {
-            if (intent.getBooleanExtra("prompted", false)) {
+            if (intent.getBooleanExtra(EXTRA_PROMPT, false)) {
                 promptDialog.dismiss()
             } else {
                 promptDialog.show()
@@ -188,18 +193,17 @@ class MainActivity : Activity(), KodeinAware {
             if (isChecked) {
                 preferences.bulk {
                     if (TextUtils.isEmpty(telephone)) {
-                        val phone = phone.replace("[^\\d]".toRegex(), "")
+                        val phone = phoneValue.replace("[^\\d]".toRegex(), "")
                         if (phone.isEmpty()) {
                             toast("Заполните телефон")
                             view.isChecked = false
                             return@setOnCheckedChangeListener
                         }
-                        Timber.e("phone $phone")
-                        (currentFragment as? MainFragment)?.updatePhone("+$phone")
+                        (currentFragment as? MainFragment)?.updatePhone(phone)
                         telephone = phone
                     }
-                    listUrl = urls.trim()
-                    lastLaunch = currentTimeMillis()
+                    baseUrl = baseValue.trim()
+                    mainUrl = mainValue.trim()
                 }
             }
             view.lock {
@@ -220,7 +224,7 @@ class MainActivity : Activity(), KodeinAware {
                 )
             }
         }
-        registerReceiver(receiver, IntentFilter(ACTION_TELEGRAM))
+        registerReceiver(receiver, IntentFilter(MainService.ACTION_TELEGRAM))
         MainService.toggle(applicationContext, preferences.runApp)
     }
 

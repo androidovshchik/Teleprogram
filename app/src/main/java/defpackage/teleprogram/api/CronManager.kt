@@ -1,15 +1,15 @@
 package defpackage.teleprogram.api
 
 import android.content.Context
-import androidx.work.CoroutineWorker
-import androidx.work.WorkManager
-import androidx.work.WorkerParameters
+import androidx.work.*
 import com.squareup.duktape.Duktape
-import kotlinx.coroutines.coroutineScope
+import defpackage.teleprogram.extension.toBase64
+import org.kodein.di.KodeinAware
 
-class ApiWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+class ApiWorker(context: Context, params: WorkerParameters) : Worker(context, params), KodeinAware {
 
-    override suspend fun doWork(): Result = coroutineScope {
+    override fun doWork(): Result {
+        tags
         val retry = inputData.getBoolean(PARAM_RETRY, false)
         val javascript = inputData.getString(PARAM_JAVASCRIPT)
         Duktape.create().use {
@@ -20,6 +20,10 @@ class ApiWorker(context: Context, params: WorkerParameters) : CoroutineWorker(co
                 else -> Result.failure()
             }
         }
+    }
+
+    override fun onStopped() {
+        super.onStopped()
     }
 
     companion object {
@@ -36,13 +40,14 @@ class CronManager(context: Context) {
 
     val workManager = WorkManager.getInstance(context)
 
-    fun launchUnique(retry: Boolean = false) {
-        /*val request = OneTimeWorkRequestBuilder<ApiWorker>()
+    fun launch(type: Int, url: String) {
+        val request = OneTimeWorkRequestBuilder<ApiWorker>()
             .setInputData(
                 Data.Builder()
                     .putBoolean(PARAM_RssETRY, retry)
                     .build()
             )
+            .addTag(url.toBase64())
             .apply {
                 if (retry) {
                     setBackoffCriteria(
@@ -60,10 +65,10 @@ class CronManager(context: Context) {
             } else {
                 null
             }
-        }*/
+        }
     }
 
-    fun cancel(context: Context) {
-        workManager.cancelAllWork()
+    fun cancel(url: String) {
+        workManager.cancelAllWorkByTag(url.toBase64())
     }
 }

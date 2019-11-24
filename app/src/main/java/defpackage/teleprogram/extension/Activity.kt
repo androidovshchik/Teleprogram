@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package defpackage.teleprogram.extensions
+package defpackage.teleprogram.extension
 
 import android.app.Activity
 

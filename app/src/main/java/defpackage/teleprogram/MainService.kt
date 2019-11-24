@@ -15,10 +15,10 @@ import defpackage.teleprogram.api.Android
 import defpackage.teleprogram.api.ApiEvaluator
 import defpackage.teleprogram.api.FileManager
 import defpackage.teleprogram.api.Preferences
-import defpackage.teleprogram.extensions.isConnected
-import defpackage.teleprogram.extensions.isRunning
-import defpackage.teleprogram.extensions.pendingActivityFor
-import defpackage.teleprogram.extensions.startForegroundService
+import defpackage.teleprogram.extension.isConnected
+import defpackage.teleprogram.extension.isRunning
+import defpackage.teleprogram.extension.pendingActivityFor
+import defpackage.teleprogram.extension.startForegroundService
 import defpackage.teleprogram.model.TeleMessage
 import kotlinx.coroutines.*
 import org.drinkless.td.libcore.telegram.Client
@@ -214,6 +214,8 @@ class MainService : Service(), KodeinAware, CoroutineScope {
         const val ACTION_TELEGRAM = "action_telegram"
 
         const val EXTRA_CODE = "extra_code"
+
+        const val EXTRA_SCRIPT = "extra_script"
 
         const val EXTRA_MESSAGE = "extra_message"
 
